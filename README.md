@@ -20,7 +20,7 @@
 ## 🚀 Installation
 
 ### Download
-1.  [**Download the latest installer (Echo.dmg)**](https://github.com/yourusername/Echo/releases/latest/download/Echo.dmg)
+1.  [**Download the latest installer (Echo.dmg)**](https://github.com/iamsumanp/Echo/raw/main/Echo.dmg)
 2.  Open the disk image and drag **Echo** to your **Applications** folder.
 
 ### First Run
@@ -59,7 +59,7 @@ If you want to build the app yourself or contribute:
 
 2.  **Clone the Repository**:
     ```bash
-    git clone https://github.com/yourusername/Echo.git
+    git clone https://github.com/iamsumanp/Echo.git
     cd Echo
     ```
 
