@@ -20,9 +20,8 @@
 ## 🚀 Installation
 
 ### Download
-1.  Go to the [Releases](../../releases) page.
-2.  Download the latest `Echo.dmg`.
-3.  Open the disk image and drag **Echo** to your **Applications** folder.
+1.  [**Download the latest installer (Echo.dmg)**](https://github.com/yourusername/Echo/releases/latest/download/Echo.dmg)
+2.  Open the disk image and drag **Echo** to your **Applications** folder.
 
 ### First Run
 1.  Launch **Echo** from your Applications folder.
