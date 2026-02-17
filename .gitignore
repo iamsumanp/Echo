@@ -1,0 +1,26 @@
+# macOS system files
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Xcode and Swift Package Manager
+.build/
+.swiftpm/
+*.xcodeproj
+*.xcworkspace
+xcuserdata/
+DerivedData/
+Packages/
+
+# Build Artifacts
+*.app
+*.dSYM
+*.dmg
+
+# Project Specific (DMG Creation)
+dmg_staging/
+generate_icon
+generate_icon.swift
+AppIcon.iconset/
+AppIcon.icns
