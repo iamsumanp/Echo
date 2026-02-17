@@ -6,6 +6,7 @@ struct ContentView: View {
     @State private var searchText = ""
     @State private var selectedItemId: UUID?
     @State private var showSettings = false
+    @State private var hoveredItemId: UUID?
     @FocusState private var isSearchFocused: Bool
     @Environment(\.colorScheme) var colorScheme
 
@@ -43,12 +44,29 @@ struct ContentView: View {
             .frame(width: 280)
             .background(Material.ultraThin)
 
+            // MARK: - Accent edge divider
+            Rectangle()
+                .fill(
+                    LinearGradient(
+                        colors: [
+                            Color.accentColor.opacity(0.3),
+                            Color.accentColor.opacity(0.08),
+                            Color.accentColor.opacity(0.3),
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+                .frame(width: 1)
+
             // MARK: - Right Pane (Preview)
             VStack(spacing: 0) {
                 if let selectedId = selectedItemId,
                     let item = historyManager.items.first(where: { $0.id == selectedId })
                 {
                     PreviewPane(item: item, historyManager: historyManager)
+                } else if !searchText.isEmpty && filteredItems.isEmpty {
+                    EmptySearchState(searchText: searchText)
                 } else {
                     EmptyPreviewState()
                 }
@@ -58,7 +76,19 @@ struct ContentView: View {
                 footerBar
             }
             .frame(maxWidth: .infinity)
-            .background(Color(nsColor: .windowBackgroundColor))
+            .background(
+                ZStack {
+                    Color(nsColor: .windowBackgroundColor)
+                    LinearGradient(
+                        colors: [
+                            Color.accentColor.opacity(0.03),
+                            Color.clear,
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                }
+            )
         }
         .background(VisualEffectView(material: .sidebar, blendingMode: .behindWindow))
         .cornerRadius(12)
@@ -172,8 +202,15 @@ struct ContentView: View {
 
                 if !pinned.isEmpty {
                     Section(
-                        header: Text("Pinned").font(.caption).fontWeight(.semibold).foregroundColor(
-                            .secondary)
+                        header: HStack(spacing: 4) {
+                            Image(systemName: "pin.fill")
+                                .font(.system(size: 8))
+                                .foregroundColor(.orange.opacity(0.7))
+                            Text("Pinned")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        .textCase(nil)
                     ) {
                         ForEach(pinned) { item in
                             rowView(for: item)
@@ -183,8 +220,15 @@ struct ContentView: View {
 
                 if !recent.isEmpty {
                     Section(
-                        header: Text("Today").font(.caption).fontWeight(.semibold).foregroundColor(
-                            .secondary)
+                        header: HStack(spacing: 4) {
+                            Image(systemName: "clock.fill")
+                                .font(.system(size: 8))
+                                .foregroundColor(.secondary.opacity(0.5))
+                            Text("Recent")
+                                .font(.system(size: 11, weight: .semibold))
+                                .foregroundColor(.secondary)
+                        }
+                        .textCase(nil)
                     ) {
                         ForEach(recent) { item in
                             rowView(for: item)
@@ -196,7 +240,7 @@ struct ContentView: View {
             .scrollContentBackground(.hidden)
             .onChange(of: selectedItemId) {
                 if let id = selectedItemId {
-                    withAnimation {
+                    withAnimation(.easeInOut(duration: 0.15)) {
                         proxy.scrollTo(id, anchor: .center)
                     }
                 }
@@ -206,25 +250,42 @@ struct ContentView: View {
 
     @ViewBuilder
     private func rowView(for item: ClipboardItem) -> some View {
-        ModernListItem(item: item, isSelected: selectedItemId == item.id)
-            .tag(item.id)
-            .listRowInsets(EdgeInsets(top: 4, leading: 8, bottom: 4, trailing: 8))
-            .listRowSeparator(.hidden)
-            .listRowBackground(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(selectedItemId == item.id ? Color.accentColor : Color.clear)
-            )
-            .onTapGesture {
+        ModernListItem(
+            item: item,
+            isSelected: selectedItemId == item.id,
+            isHovered: hoveredItemId == item.id,
+            historyManager: historyManager
+        )
+        .tag(item.id)
+        .listRowInsets(EdgeInsets(top: 3, leading: 8, bottom: 3, trailing: 8))
+        .listRowSeparator(.hidden)
+        .listRowBackground(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(
+                    selectedItemId == item.id
+                        ? Color.accentColor
+                        : (hoveredItemId == item.id
+                            ? Color.primary.opacity(0.05) : Color.clear)
+                )
+                .animation(.easeInOut(duration: 0.12), value: hoveredItemId)
+                .animation(.easeInOut(duration: 0.15), value: selectedItemId)
+        )
+        .onHover { isHovered in
+            hoveredItemId = isHovered ? item.id : nil
+        }
+        .onTapGesture {
+            withAnimation(.easeInOut(duration: 0.15)) {
                 selectedItemId = item.id
             }
-            .simultaneousGesture(
-                TapGesture(count: 2).onEnded {
-                    pasteItem(item)
-                }
-            )
-            .contextMenu {
-                contextMenuButtons(for: item)
+        }
+        .simultaneousGesture(
+            TapGesture(count: 2).onEnded {
+                pasteItem(item)
             }
+        )
+        .contextMenu {
+            contextMenuButtons(for: item)
+        }
     }
 
     private var footerBar: some View {
@@ -232,7 +293,14 @@ struct ContentView: View {
             shortcutLabel("⌘.", text: "Settings")
                 .onTapGesture { showSettings = true }
                 .contentShape(Rectangle())
+
             Spacer()
+
+            // Item count
+            Text("\(filteredItems.count) item\(filteredItems.count == 1 ? "" : "s")")
+                .font(.system(size: 10))
+                .foregroundColor(.secondary.opacity(0.4))
+
             shortcutLabel("↩", text: "Paste")
             shortcutLabel("↑↓", text: "Navigate")
         }
@@ -284,7 +352,9 @@ struct ContentView: View {
         }
 
         if newIndex >= 0 && newIndex < filteredItems.count {
-            selectedItemId = filteredItems[newIndex].id
+            withAnimation(.easeInOut(duration: 0.12)) {
+                selectedItemId = filteredItems[newIndex].id
+            }
         }
     }
 
@@ -337,24 +407,41 @@ struct ContentView: View {
 struct ModernListItem: View {
     let item: ClipboardItem
     let isSelected: Bool
+    let isHovered: Bool
+    let historyManager: HistoryManager
 
     var body: some View {
-        HStack(spacing: 12) {
-            // Icon with rounded background
-            Group {
-                if item.type == .text {
-                    Image(systemName: "doc.text.fill")
-                } else {
-                    Image(systemName: "photo.fill")
-                }
+        HStack(spacing: 10) {
+            // Icon / Thumbnail
+            if item.type == .image, let imagePath = item.imagePath,
+                let url = historyManager.getImageUrl(for: imagePath),
+                let nsImage = NSImage(contentsOf: url)
+            {
+                // Image thumbnail
+                Image(nsImage: nsImage)
+                    .resizable()
+                    .scaledToFill()
+                    .frame(width: 32, height: 32)
+                    .clipShape(RoundedRectangle(cornerRadius: 6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 6)
+                            .stroke(
+                                isSelected ? Color.white.opacity(0.2) : Color.primary.opacity(0.08),
+                                lineWidth: 0.5)
+                    )
+            } else {
+                // Text icon
+                Image(systemName: "doc.text.fill")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(isSelected ? .white : .secondary)
+                    .frame(width: 32, height: 32)
+                    .background(
+                        RoundedRectangle(cornerRadius: 7)
+                            .fill(
+                                isSelected
+                                    ? Color.white.opacity(0.15) : Color.primary.opacity(0.06))
+                    )
             }
-            .font(.system(size: 13, weight: .medium))
-            .foregroundColor(isSelected ? .white : .secondary)
-            .frame(width: 30, height: 30)
-            .background(
-                RoundedRectangle(cornerRadius: 7)
-                    .fill(isSelected ? Color.white.opacity(0.15) : Color.primary.opacity(0.06))
-            )
 
             VStack(alignment: .leading, spacing: 3) {
                 Text(titleText)
@@ -367,7 +454,8 @@ struct ModernListItem: View {
                         .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
 
                     Text("·")
-                        .foregroundColor(isSelected ? .white.opacity(0.5) : .secondary.opacity(0.6))
+                        .foregroundColor(
+                            isSelected ? .white.opacity(0.5) : .secondary.opacity(0.6))
 
                     Text(timeAgo(item.dateCreated))
                         .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
@@ -405,6 +493,23 @@ struct PreviewPane: View {
     let item: ClipboardItem
     let historyManager: HistoryManager
 
+    private var isCodeLike: Bool {
+        guard let text = item.textContent else { return false }
+        let codeIndicators = ["{", "}", "()", "=>", "->", "func ", "def ", "class ", "import ",
+                              "const ", "let ", "var ", "return ", "if (", "for (", "<div", "</",
+                              "SELECT ", "FROM ", "INSERT ", "CREATE "]
+        let matchCount = codeIndicators.filter { text.contains($0) }.count
+        return matchCount >= 2
+    }
+
+    private var textStats: (chars: Int, words: Int, lines: Int)? {
+        guard let text = item.textContent else { return nil }
+        let chars = text.count
+        let words = text.split(whereSeparator: { $0.isWhitespace || $0.isNewline }).count
+        let lines = text.components(separatedBy: .newlines).count
+        return (chars, words, lines)
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             // Header
@@ -412,7 +517,7 @@ struct PreviewPane: View {
                 // Icon with accent background
                 Group {
                     if item.type == .text {
-                        Image(systemName: "doc.text.fill")
+                        Image(systemName: isCodeLike ? "chevron.left.forwardslash.chevron.right" : "doc.text.fill")
                     } else {
                         Image(systemName: "photo.fill")
                     }
@@ -425,7 +530,9 @@ struct PreviewPane: View {
                         .fill(
                             LinearGradient(
                                 colors: item.type == .text
-                                    ? [Color.blue.opacity(0.8), Color.blue.opacity(0.5)]
+                                    ? (isCodeLike
+                                        ? [Color.green.opacity(0.8), Color.green.opacity(0.5)]
+                                        : [Color.blue.opacity(0.8), Color.blue.opacity(0.5)])
                                     : [Color.purple.opacity(0.8), Color.purple.opacity(0.5)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
@@ -436,9 +543,19 @@ struct PreviewPane: View {
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.applicationName ?? "Unknown Application")
                         .font(.system(size: 16, weight: .semibold))
-                    Text(item.dateCreated.formatted(date: .long, time: .shortened))
-                        .font(.system(size: 12))
-                        .foregroundColor(.secondary)
+                    HStack(spacing: 6) {
+                        Text(item.dateCreated.formatted(date: .long, time: .shortened))
+                            .font(.system(size: 12))
+                            .foregroundColor(.secondary)
+
+                        if let stats = textStats {
+                            Text("·")
+                                .foregroundColor(.secondary.opacity(0.4))
+                            Text("\(stats.chars) chars · \(stats.words) words")
+                                .font(.system(size: 11))
+                                .foregroundColor(.secondary.opacity(0.5))
+                        }
+                    }
                 }
 
                 Spacer()
@@ -452,12 +569,31 @@ struct PreviewPane: View {
             ScrollView {
                 VStack(alignment: .leading) {
                     if let text = item.textContent {
-                        Text(text)
-                            .font(.system(size: 13, design: .monospaced))
-                            .foregroundColor(.primary.opacity(0.85))
-                            .textSelection(.enabled)
-                            .padding(16)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if isCodeLike {
+                            // Code block styling
+                            Text(text)
+                                .font(.system(size: 12.5, design: .monospaced))
+                                .foregroundColor(.primary.opacity(0.9))
+                                .textSelection(.enabled)
+                                .padding(14)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.black.opacity(0.25))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 8)
+                                                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                                        )
+                                )
+                                .padding(14)
+                        } else {
+                            Text(text)
+                                .font(.system(size: 13, design: .monospaced))
+                                .foregroundColor(.primary.opacity(0.85))
+                                .textSelection(.enabled)
+                                .padding(16)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     } else if let imagePath = item.imagePath,
                         let url = historyManager.getImageUrl(for: imagePath),
                         let nsImage = NSImage(contentsOf: url)
@@ -466,6 +602,7 @@ struct PreviewPane: View {
                             .resizable()
                             .scaledToFit()
                             .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
                             .padding(16)
                     }
                 }
@@ -492,6 +629,32 @@ struct EmptyPreviewState: View {
             Text("Select a clipboard entry to preview")
                 .font(.system(size: 12))
                 .foregroundColor(.secondary.opacity(0.3))
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+struct EmptySearchState: View {
+    let searchText: String
+
+    var body: some View {
+        VStack(spacing: 14) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 36, weight: .light))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.secondary.opacity(0.3), .secondary.opacity(0.12)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+            Text("No Results")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.5))
+            Text("No items match \"\(searchText)\"")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary.opacity(0.3))
+                .lineLimit(1)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
