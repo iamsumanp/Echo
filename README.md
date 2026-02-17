@@ -6,6 +6,12 @@
 ![Platform](https://img.shields.io/badge/Platform-macOS%2014.0+-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-blue.svg)
 
+## 📸 Screenshots
+
+![Main Interface](screenshots/main.png)
+![List View](screenshots/main2.png)
+![Settings](screenshots/main3.png)
+
 ## ✨ Features
 
 - **Unlimited History**: Automatically captures text and images copied to your clipboard.
@@ -45,7 +51,7 @@ The default shortcut to open Echo is:
 - **Right Click**: Open context menu to Pin, Delete, or Copy.
 
 ### Preferences
-- Press **`Cmd` + `,`** while the window is open to access Settings.
+- Press **`Cmd` + `.`** while the window is open to access Settings.
 - Configure history retention (1 day to Forever).
 - Record a custom global hotkey.
 
