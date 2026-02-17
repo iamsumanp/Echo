@@ -88,6 +88,18 @@ If you want to build the app yourself or contribute:
 Echo operates **100% offline**. Your clipboard history is stored locally at:
 `~/Library/Application Support/Echo`
 
+## ❓ Troubleshooting
+
+### "App is damaged and can't be opened"
+If you see this error after downloading, it is because the app is not notarized by Apple (which requires a paid developer account). To fix it:
+
+1.  Open your **Terminal**.
+2.  Run the following command to remove the quarantine attribute:
+    ```bash
+    xattr -cr /Applications/Echo.app
+    ```
+3.  Launch the app again.
+
 ## 📄 License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
