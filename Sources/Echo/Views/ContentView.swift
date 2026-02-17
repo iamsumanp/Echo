@@ -374,7 +374,7 @@ struct ContentView: View {
         {
             pasteboard.writeObjects([image])
         }
-        NSSound(named: "Tink")?.play()
+        NSSound(named: "Pop")?.play()
     }
 
     @ViewBuilder
