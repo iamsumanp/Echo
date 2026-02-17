@@ -148,6 +148,16 @@ struct ContentView: View {
         .onReceive(NotificationCenter.default.publisher(for: .openPreferences)) { _ in
             showSettings = true
         }
+        .onReceive(
+            NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)
+        ) { _ in
+            searchText = ""
+            isSearchFocused = true
+
+            // Select the most recently created item (last copy)
+            let mostRecentItem = historyManager.items.max(by: { $0.dateCreated < $1.dateCreated })
+            selectedItemId = mostRecentItem?.id
+        }
     }
 
     // MARK: - Subviews
@@ -495,9 +505,11 @@ struct PreviewPane: View {
 
     private var isCodeLike: Bool {
         guard let text = item.textContent else { return false }
-        let codeIndicators = ["{", "}", "()", "=>", "->", "func ", "def ", "class ", "import ",
-                              "const ", "let ", "var ", "return ", "if (", "for (", "<div", "</",
-                              "SELECT ", "FROM ", "INSERT ", "CREATE "]
+        let codeIndicators = [
+            "{", "}", "()", "=>", "->", "func ", "def ", "class ", "import ",
+            "const ", "let ", "var ", "return ", "if (", "for (", "<div", "</",
+            "SELECT ", "FROM ", "INSERT ", "CREATE ",
+        ]
         let matchCount = codeIndicators.filter { text.contains($0) }.count
         return matchCount >= 2
     }
@@ -517,7 +529,9 @@ struct PreviewPane: View {
                 // Icon with accent background
                 Group {
                     if item.type == .text {
-                        Image(systemName: isCodeLike ? "chevron.left.forwardslash.chevron.right" : "doc.text.fill")
+                        Image(
+                            systemName: isCodeLike
+                                ? "chevron.left.forwardslash.chevron.right" : "doc.text.fill")
                     } else {
                         Image(systemName: "photo.fill")
                     }
