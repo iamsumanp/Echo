@@ -37,7 +37,7 @@ struct ContentView: View {
             // MARK: - Left Pane (Search & List)
             VStack(spacing: 0) {
                 searchHeader
-                Divider().opacity(0.3)
+                Divider().background(Color.white.opacity(0.06)).frame(height: 0.5)
                 listView
             }
             .frame(width: 280)
@@ -53,7 +53,7 @@ struct ContentView: View {
                     EmptyPreviewState()
                 }
 
-                Divider().opacity(0.3)
+                Divider().background(Color.white.opacity(0.06)).frame(height: 0.5)
 
                 footerBar
             }
@@ -123,14 +123,15 @@ struct ContentView: View {
     // MARK: - Subviews
 
     private var searchHeader: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             Image(systemName: "magnifyingglass")
-                .foregroundColor(.secondary)
+                .font(.system(size: 14, weight: .medium))
+                .foregroundColor(.accentColor.opacity(0.8))
 
             TextField("Type to search history...", text: $searchText)
                 .textFieldStyle(.plain)
                 .focused($isSearchFocused)
-                .font(.body)
+                .font(.system(size: 14))
                 .onKeyPress(.downArrow) {
                     moveSelection(direction: 1)
                     return .handled
@@ -148,9 +149,19 @@ struct ContentView: View {
                         pasteItem(first)
                     }
                 }
+
+            if !searchText.isEmpty {
+                Button(action: { searchText = "" }) {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary.opacity(0.6))
+                }
+                .buttonStyle(.plain)
+            }
         }
-        .padding(12)
-        .background(Color.black.opacity(0.1))  // Darker input background
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.black.opacity(0.15))
     }
 
     private var listView: some View {
@@ -218,31 +229,44 @@ struct ContentView: View {
 
     private var footerBar: some View {
         HStack(spacing: 16) {
+            shortcutLabel("⌘.", text: "Settings")
+                .onTapGesture { showSettings = true }
+                .contentShape(Rectangle())
             Spacer()
             shortcutLabel("↩", text: "Paste")
             shortcutLabel("↑↓", text: "Navigate")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 8)
-        .background(Color.black.opacity(0.2))  // Dark footer
+        .background(Color.black.opacity(0.25))
     }
 
     @ViewBuilder
     private func shortcutLabel(_ key: String, text: String) -> some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 5) {
             Text(key)
-                .font(.system(.caption, design: .monospaced))
-                .foregroundColor(.secondary)
+                .font(.system(size: 10, weight: .medium, design: .rounded))
+                .foregroundColor(.secondary.opacity(0.9))
+                .padding(.horizontal, 5)
+                .padding(.vertical, 2)
+                .background(
+                    RoundedRectangle(cornerRadius: 4)
+                        .fill(Color.white.opacity(0.08))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 4)
+                                .stroke(Color.white.opacity(0.06), lineWidth: 0.5)
+                        )
+                )
             Text(text)
-                .font(.caption)
-                .foregroundColor(.secondary)
+                .font(.system(size: 11, weight: .regular))
+                .foregroundColor(.secondary.opacity(0.7))
         }
     }
 
     private var hiddenButtons: some View {
         Group {
             Button("Settings") { showSettings.toggle() }
-                .keyboardShortcut(",", modifiers: .command)
+                .keyboardShortcut(".", modifiers: .command)
         }
         .hidden()
     }
@@ -316,57 +340,49 @@ struct ModernListItem: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            // Static Icon
+            // Icon with rounded background
             Group {
                 if item.type == .text {
-                    Image(systemName: "doc.text")
+                    Image(systemName: "doc.text.fill")
                 } else {
-                    Image(systemName: "photo")
+                    Image(systemName: "photo.fill")
                 }
             }
-            .font(.system(size: 20))
-            .foregroundColor(.secondary)
-            .frame(width: 28, height: 28)
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(isSelected ? .white : .secondary)
+            .frame(width: 30, height: 30)
+            .background(
+                RoundedRectangle(cornerRadius: 7)
+                    .fill(isSelected ? Color.white.opacity(0.15) : Color.primary.opacity(0.06))
+            )
 
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 3) {
                 Text(titleText)
-                    .font(.headline)
-                    .fontWeight(.medium)
+                    .font(.system(size: 13, weight: .medium))
                     .foregroundColor(isSelected ? .white : .primary)
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
-                    if isSelected {
-                        Text(item.applicationName ?? "Unknown")
-                            .foregroundColor(.white.opacity(0.8))
-                    } else {
-                        Text(item.applicationName ?? "Unknown")
-                            .foregroundColor(.secondary)
-                    }
+                    Text(item.applicationName ?? "Unknown")
+                        .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
 
-                    if isSelected {
-                        Text("•")
-                            .foregroundColor(.white.opacity(0.6))
-                        Text(timeAgo(item.dateCreated))
-                            .foregroundColor(.white.opacity(0.8))
-                    } else {
-                        Text("•")
-                            .foregroundColor(.secondary)
-                        Text(timeAgo(item.dateCreated))
-                            .foregroundColor(.secondary)
-                    }
+                    Text("·")
+                        .foregroundColor(isSelected ? .white.opacity(0.5) : .secondary.opacity(0.6))
+
+                    Text(timeAgo(item.dateCreated))
+                        .foregroundColor(isSelected ? .white.opacity(0.7) : .secondary)
 
                     if item.isPinned {
                         Image(systemName: "pin.fill")
-                            .font(.caption2)
-                            .foregroundColor(isSelected ? .white : .orange)
+                            .font(.system(size: 8))
+                            .foregroundColor(isSelected ? .white.opacity(0.8) : .orange)
                     }
                 }
-                .font(.caption)
+                .font(.system(size: 11))
             }
             Spacer()
         }
-        .padding(.vertical, 6)
+        .padding(.vertical, 5)
         .contentShape(Rectangle())
     }
 
@@ -390,44 +406,57 @@ struct PreviewPane: View {
     let historyManager: HistoryManager
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 0) {
             // Header
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 12) {
-                    Group {
-                        if item.type == .text {
-                            Image(systemName: "doc.text")
-                        } else {
-                            Image(systemName: "photo")
-                        }
-                    }
-                    .font(.system(size: 32))
-                    .foregroundColor(.secondary)
-                    .frame(width: 48, height: 48)
-
-                    VStack(alignment: .leading) {
-                        Text(item.applicationName ?? "Unknown Application")
-                            .font(.title2)
-                            .fontWeight(.bold)
-                        Text(item.dateCreated.formatted(date: .long, time: .shortened))
-                            .font(.subheadline)
-                            .foregroundColor(.secondary)
+            HStack(spacing: 14) {
+                // Icon with accent background
+                Group {
+                    if item.type == .text {
+                        Image(systemName: "doc.text.fill")
+                    } else {
+                        Image(systemName: "photo.fill")
                     }
                 }
-            }
-            .padding(.horizontal)
-            .padding(.top, 24)
+                .font(.system(size: 18, weight: .medium))
+                .foregroundColor(.white)
+                .frame(width: 40, height: 40)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(
+                            LinearGradient(
+                                colors: item.type == .text
+                                    ? [Color.blue.opacity(0.8), Color.blue.opacity(0.5)]
+                                    : [Color.purple.opacity(0.8), Color.purple.opacity(0.5)],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                )
 
-            Divider()
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(item.applicationName ?? "Unknown Application")
+                        .font(.system(size: 16, weight: .semibold))
+                    Text(item.dateCreated.formatted(date: .long, time: .shortened))
+                        .font(.system(size: 12))
+                        .foregroundColor(.secondary)
+                }
+
+                Spacer()
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 16)
+
+            Divider().background(Color.white.opacity(0.06)).frame(height: 0.5)
 
             // Content
             ScrollView {
                 VStack(alignment: .leading) {
                     if let text = item.textContent {
                         Text(text)
-                            .font(.system(.body, design: .monospaced))
+                            .font(.system(size: 13, design: .monospaced))
+                            .foregroundColor(.primary.opacity(0.85))
                             .textSelection(.enabled)
-                            .padding()
+                            .padding(16)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     } else if let imagePath = item.imagePath,
                         let url = historyManager.getImageUrl(for: imagePath),
@@ -436,7 +465,8 @@ struct PreviewPane: View {
                         Image(nsImage: nsImage)
                             .resizable()
                             .scaledToFit()
-                            .padding()
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .padding(16)
                     }
                 }
             }
@@ -446,13 +476,22 @@ struct PreviewPane: View {
 
 struct EmptyPreviewState: View {
     var body: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 14) {
             Image(systemName: "doc.on.clipboard")
-                .font(.system(size: 48))
-                .foregroundColor(.secondary.opacity(0.3))
+                .font(.system(size: 40, weight: .light))
+                .foregroundStyle(
+                    LinearGradient(
+                        colors: [.secondary.opacity(0.3), .secondary.opacity(0.15)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
             Text("No Item Selected")
-                .font(.title2)
-                .foregroundColor(.secondary)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundColor(.secondary.opacity(0.5))
+            Text("Select a clipboard entry to preview")
+                .font(.system(size: 12))
+                .foregroundColor(.secondary.opacity(0.3))
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
