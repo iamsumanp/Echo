@@ -16,7 +16,6 @@ Packages/
 # Build Artifacts
 *.app
 *.dSYM
-*.dmg
 
 # Project Specific (DMG Creation)
 dmg_staging/
