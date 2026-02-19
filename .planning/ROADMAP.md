@@ -21,6 +21,12 @@
 
 **Requirements:** PERF-01, CLIP-01, SRCH-01
 
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Fix arrow key stutter (PERF-01) and harden full-content search (SRCH-01)
+- [ ] 01-02-PLAN.md — Fix pin ordering: set pinnedDate in togglePin, sort pinned group by pinnedDate ascending (CLIP-01)
+
 **Success Criteria:**
 1. User can hold arrow key and scroll through 100+ items without stutter or input delay
 2. Pinning an item places it after all existing pinned items (not at the top)
@@ -33,6 +39,11 @@
 **Goal:** Unify the visual theme so both panels and selection highlight match the dark aesthetic.
 
 **Requirements:** UI-01, UI-02
+
+**Plans:** 1 plan
+
+Plans:
+- [ ] 02-01-PLAN.md — Refine panel background contrast and selection highlight color
 
 **Success Criteria:**
 1. Right detail panel has a visibly lighter background than the left list panel
@@ -65,4 +76,4 @@
 
 ---
 *Roadmap created: 2026-02-19*
-*Last updated: 2026-02-19 after initial creation*
+*Last updated: 2026-02-19*
