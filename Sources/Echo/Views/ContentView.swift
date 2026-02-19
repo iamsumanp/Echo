@@ -425,16 +425,20 @@ struct ModernListItem: View {
                     )
             } else {
                 // Text icon
-                Image(systemName: "doc.text.fill")
-                    .font(.system(size: 13, weight: .medium))
-                    .foregroundColor(isSelected ? .white : .secondary)
-                    .frame(width: 32, height: 32)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7)
-                            .fill(
-                                isSelected
-                                    ? Color.white.opacity(0.15) : Color.primary.opacity(0.06))
-                    )
+                if let bundleIdentifier = item.bundleIdentifier {
+                    CachedAppIcon(bundleIdentifier: bundleIdentifier, size: 32)
+                } else {
+                    Image(systemName: "doc.text.fill")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundColor(isSelected ? .white : .secondary)
+                        .frame(width: 32, height: 32)
+                        .background(
+                            RoundedRectangle(cornerRadius: 7)
+                                .fill(
+                                    isSelected
+                                        ? Color.white.opacity(0.15) : Color.primary.opacity(0.06))
+                        )
+                }
             }
 
             VStack(alignment: .leading, spacing: 3) {
@@ -511,32 +515,41 @@ struct PreviewPane: View {
             // Header
             HStack(spacing: 14) {
                 // Icon with accent background
-                Group {
-                    if item.type == .text {
-                        Image(
-                            systemName: isCodeLike
-                                ? "chevron.left.forwardslash.chevron.right" : "doc.text.fill")
-                    } else {
-                        Image(systemName: "photo.fill")
+                if let bundleIdentifier = item.bundleIdentifier {
+                    CachedAppIcon(bundleIdentifier: bundleIdentifier, size: 40)
+                } else {
+                    Group {
+                        if item.type == .text {
+                            Image(
+                                systemName: isCodeLike
+                                    ? "chevron.left.forwardslash.chevron.right" : "doc.text.fill")
+                        } else {
+                            Image(systemName: "photo.fill")
+                        }
                     }
-                }
-                .font(.system(size: 18, weight: .medium))
-                .foregroundColor(.white)
-                .frame(width: 40, height: 40)
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(
-                            LinearGradient(
-                                colors: item.type == .text
-                                    ? (isCodeLike
-                                        ? [Color.green.opacity(0.8), Color.green.opacity(0.5)]
-                                        : [Color.blue.opacity(0.8), Color.blue.opacity(0.5)])
-                                    : [Color.purple.opacity(0.8), Color.purple.opacity(0.5)],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundColor(.white)
+                    .frame(width: 40, height: 40)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(
+                                LinearGradient(
+                                    colors: item.type == .text
+                                        ? (isCodeLike
+                                            ? [Color.green.opacity(0.8), Color.green.opacity(0.5)]
+                                            : [
+                                                Color.blue.opacity(0.8),
+                                                Color.blue.opacity(0.5),
+                                            ])
+                                        : [
+                                            Color.purple.opacity(0.8), Color.purple.opacity(0.5),
+                                        ],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
                             )
-                        )
-                )
+                    )
+                }
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text(item.applicationName ?? "Unknown Application")
