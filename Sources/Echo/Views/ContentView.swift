@@ -11,7 +11,7 @@ struct ContentView: View {
     @Environment(\.colorScheme) var colorScheme
 
     @State private var displayItems: [ClipboardItem] = []
-    
+
     private func updateDisplayItems() {
         let items: [ClipboardItem]
         if searchText.isEmpty {
@@ -19,8 +19,10 @@ struct ContentView: View {
         } else {
             items = historyManager.items.filter { item in
                 // Search full clipboard content (not just visible title)
-                let contentMatch = item.textContent?.localizedCaseInsensitiveContains(searchText) == true
-                let appMatch = item.applicationName?.localizedCaseInsensitiveContains(searchText) == true
+                let contentMatch =
+                    item.textContent?.localizedCaseInsensitiveContains(searchText) == true
+                let appMatch =
+                    item.applicationName?.localizedCaseInsensitiveContains(searchText) == true
                 return contentMatch || appMatch
             }
         }
@@ -41,10 +43,10 @@ struct ContentView: View {
                 return item1.dateCreated > item2.dateCreated
             }
         }
-        
+
         // Ensure selection is valid
         if selectedItemId == nil || !displayItems.contains(where: { $0.id == selectedItemId }) {
-             selectedItemId = displayItems.first?.id
+            selectedItemId = displayItems.first?.id
         }
     }
 
@@ -96,10 +98,10 @@ struct ContentView: View {
             isSearchFocused = true
         }
         .onChange(of: historyManager.items) {
-             updateDisplayItems()
+            updateDisplayItems()
         }
         .onChange(of: searchText) {
-             updateDisplayItems()
+            updateDisplayItems()
         }
         // Keyboard Handling
         .background(Color.clear.focusable())
@@ -409,13 +411,10 @@ struct ModernListItem: View {
         HStack(spacing: 10) {
             // Icon / Thumbnail
             if item.type == .image, let imagePath = item.imagePath,
-                let url = historyManager.getImageUrl(for: imagePath),
-                let nsImage = NSImage(contentsOf: url)
+                let url = historyManager.getImageUrl(for: imagePath)
             {
                 // Image thumbnail
-                Image(nsImage: nsImage)
-                    .resizable()
-                    .scaledToFill()
+                CachedImage(url: url)
                     .frame(width: 32, height: 32)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                     .overlay(
@@ -594,15 +593,38 @@ struct PreviewPane: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     } else if let imagePath = item.imagePath,
-                        let url = historyManager.getImageUrl(for: imagePath),
-                        let nsImage = NSImage(contentsOf: url)
+                        let url = historyManager.getImageUrl(for: imagePath)
                     {
-                        Image(nsImage: nsImage)
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                            .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
-                            .padding(16)
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .empty:
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.primary.opacity(0.05))
+                                    ProgressView()
+                                }
+                                .frame(height: 200)
+                                .padding(16)
+                            case .success(let image):
+                                image
+                                    .resizable()
+                                    .scaledToFit()
+                                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                                    .shadow(color: .black.opacity(0.2), radius: 8, x: 0, y: 2)
+                                    .padding(16)
+                            case .failure:
+                                ZStack {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .fill(Color.red.opacity(0.1))
+                                    Image(systemName: "exclamationmark.triangle")
+                                        .foregroundColor(.red)
+                                }
+                                .frame(height: 200)
+                                .padding(16)
+                            @unknown default:
+                                EmptyView()
+                            }
+                        }
                     }
                 }
             }
