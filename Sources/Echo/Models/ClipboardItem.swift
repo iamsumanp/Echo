@@ -12,6 +12,7 @@ struct ClipboardItem: Identifiable, Codable, Hashable {
     let type: ClipboardItemType
     let dateCreated: Date
     var isPinned: Bool
+    var pinnedDate: Date?
     let applicationName: String?
     let bundleIdentifier: String?
 
@@ -22,6 +23,7 @@ struct ClipboardItem: Identifiable, Codable, Hashable {
         type: ClipboardItemType,
         dateCreated: Date = Date(),
         isPinned: Bool = false,
+        pinnedDate: Date? = nil,
         applicationName: String? = nil,
         bundleIdentifier: String? = nil
     ) {
@@ -31,6 +33,7 @@ struct ClipboardItem: Identifiable, Codable, Hashable {
         self.type = type
         self.dateCreated = dateCreated
         self.isPinned = isPinned
+        self.pinnedDate = pinnedDate
         self.applicationName = applicationName
         self.bundleIdentifier = bundleIdentifier
     }

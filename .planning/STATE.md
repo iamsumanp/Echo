@@ -9,15 +9,15 @@ See: .planning/PROJECT.md (updated 2026-02-19)
 
 ## Current Phase
 
-**Phase:** 1 — Core Fixes
+**Phase:** 2 — Theme Polish
 **Status:** Not Started
-**Goal:** Fix scroll performance, pin ordering, and full-content search
+**Goal:** Unify the visual theme so both panels and selection highlight match the dark aesthetic.
 
 ## Progress
 
 | Phase | Name | Status | Plans |
 |-------|------|--------|-------|
-| 1 | Core Fixes | ○ Not Started | 0 |
+| 1 | Core Fixes | ● Completed | 2 |
 | 2 | Theme Polish | ○ Not Started | 0 |
 | 3 | App Icons | ○ Not Started | 0 |
 | 4 | Link Previews | ○ Not Started | 0 |

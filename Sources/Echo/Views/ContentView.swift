@@ -10,26 +10,41 @@ struct ContentView: View {
     @FocusState private var isSearchFocused: Bool
     @Environment(\.colorScheme) var colorScheme
 
-    var filteredItems: [ClipboardItem] {
+    @State private var displayItems: [ClipboardItem] = []
+    
+    private func updateDisplayItems() {
         let items: [ClipboardItem]
         if searchText.isEmpty {
             items = historyManager.items
         } else {
             items = historyManager.items.filter { item in
-                item.textContent?.localizedCaseInsensitiveContains(searchText) == true
-                    || item.applicationName?.localizedCaseInsensitiveContains(searchText) == true
+                // Search full clipboard content (not just visible title)
+                let contentMatch = item.textContent?.localizedCaseInsensitiveContains(searchText) == true
+                let appMatch = item.applicationName?.localizedCaseInsensitiveContains(searchText) == true
+                return contentMatch || appMatch
             }
         }
 
-        // Sort: Pinned first, then by date (descending)
-        return items.sorted { (item1, item2) -> Bool in
+        // Sort: Pinned first (by pinnedDate ascending so newest pin is last), then by date (descending)
+        displayItems = items.sorted { (item1, item2) -> Bool in
             if item1.isPinned && !item2.isPinned {
                 return true
             } else if !item1.isPinned && item2.isPinned {
                 return false
+            } else if item1.isPinned && item2.isPinned {
+                // Both pinned: sort by when they were pinned, oldest pin first (ascending)
+                // nil pinnedDate means pinned before this fix — treat as earliest
+                let date1 = item1.pinnedDate ?? .distantPast
+                let date2 = item2.pinnedDate ?? .distantPast
+                return date1 < date2
             } else {
                 return item1.dateCreated > item2.dateCreated
             }
+        }
+        
+        // Ensure selection is valid
+        if selectedItemId == nil || !displayItems.contains(where: { $0.id == selectedItemId }) {
+             selectedItemId = displayItems.first?.id
         }
     }
 
@@ -46,17 +61,7 @@ struct ContentView: View {
 
             // MARK: - Accent edge divider
             Rectangle()
-                .fill(
-                    LinearGradient(
-                        colors: [
-                            Color.accentColor.opacity(0.3),
-                            Color.accentColor.opacity(0.08),
-                            Color.accentColor.opacity(0.3),
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
+                .fill(Color.white.opacity(0.06))
                 .frame(width: 1)
 
             // MARK: - Right Pane (Preview)
@@ -65,7 +70,7 @@ struct ContentView: View {
                     let item = historyManager.items.first(where: { $0.id == selectedId })
                 {
                     PreviewPane(item: item, historyManager: historyManager)
-                } else if !searchText.isEmpty && filteredItems.isEmpty {
+                } else if !searchText.isEmpty && displayItems.isEmpty {
                     EmptySearchState(searchText: searchText)
                 } else {
                     EmptyPreviewState()
@@ -76,19 +81,7 @@ struct ContentView: View {
                 footerBar
             }
             .frame(maxWidth: .infinity)
-            .background(
-                ZStack {
-                    Color(nsColor: .windowBackgroundColor)
-                    LinearGradient(
-                        colors: [
-                            Color.accentColor.opacity(0.03),
-                            Color.clear,
-                        ],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                }
-            )
+            .background(Material.ultraThin)
         }
         .background(VisualEffectView(material: .sidebar, blendingMode: .behindWindow))
         .cornerRadius(12)
@@ -98,14 +91,15 @@ struct ContentView: View {
         )
         .frame(width: 800, height: 500)
         .onAppear {
-            selectedItemId = filteredItems.first?.id
+            updateDisplayItems()
+            selectedItemId = displayItems.first?.id
             isSearchFocused = true
         }
-        .onChange(of: filteredItems) {
-            if selectedItemId == nil || !filteredItems.contains(where: { $0.id == selectedItemId })
-            {
-                selectedItemId = filteredItems.first?.id
-            }
+        .onChange(of: historyManager.items) {
+             updateDisplayItems()
+        }
+        .onChange(of: searchText) {
+             updateDisplayItems()
         }
         // Keyboard Handling
         .background(Color.clear.focusable())
@@ -119,7 +113,7 @@ struct ContentView: View {
         }
         .onKeyPress(.return) {
             if let selectedId = selectedItemId,
-                let item = filteredItems.first(where: { $0.id == selectedId })
+                let item = displayItems.first(where: { $0.id == selectedId })
             {
                 pasteItem(item)
                 return .handled
@@ -182,10 +176,10 @@ struct ContentView: View {
                 }
                 .onSubmit {
                     if let selectedId = selectedItemId,
-                        let item = filteredItems.first(where: { $0.id == selectedId })
+                        let item = displayItems.first(where: { $0.id == selectedId })
                     {
                         pasteItem(item)
-                    } else if let first = filteredItems.first {
+                    } else if let first = displayItems.first {
                         pasteItem(first)
                     }
                 }
@@ -207,8 +201,8 @@ struct ContentView: View {
     private var listView: some View {
         ScrollViewReader { proxy in
             List(selection: $selectedItemId) {
-                let pinned = filteredItems.filter { $0.isPinned }
-                let recent = filteredItems.filter { !$0.isPinned }
+                let pinned = displayItems.filter { $0.isPinned }
+                let recent = displayItems.filter { !$0.isPinned }
 
                 if !pinned.isEmpty {
                     Section(
@@ -250,9 +244,7 @@ struct ContentView: View {
             .scrollContentBackground(.hidden)
             .onChange(of: selectedItemId) {
                 if let id = selectedItemId {
-                    withAnimation(.easeInOut(duration: 0.15)) {
-                        proxy.scrollTo(id, anchor: .center)
-                    }
+                    proxy.scrollTo(id, anchor: .center)
                 }
             }
         }
@@ -273,20 +265,16 @@ struct ContentView: View {
             RoundedRectangle(cornerRadius: 8)
                 .fill(
                     selectedItemId == item.id
-                        ? Color.accentColor
+                        ? Color.white.opacity(0.2)
                         : (hoveredItemId == item.id
                             ? Color.primary.opacity(0.05) : Color.clear)
                 )
-                .animation(.easeInOut(duration: 0.12), value: hoveredItemId)
-                .animation(.easeInOut(duration: 0.15), value: selectedItemId)
         )
         .onHover { isHovered in
             hoveredItemId = isHovered ? item.id : nil
         }
         .onTapGesture {
-            withAnimation(.easeInOut(duration: 0.15)) {
-                selectedItemId = item.id
-            }
+            selectedItemId = item.id
         }
         .simultaneousGesture(
             TapGesture(count: 2).onEnded {
@@ -307,7 +295,7 @@ struct ContentView: View {
             Spacer()
 
             // Item count
-            Text("\(filteredItems.count) item\(filteredItems.count == 1 ? "" : "s")")
+            Text("\(displayItems.count) item\(displayItems.count == 1 ? "" : "s")")
                 .font(.system(size: 10))
                 .foregroundColor(.secondary.opacity(0.4))
 
@@ -352,19 +340,17 @@ struct ContentView: View {
     // MARK: - Logic & Actions
 
     private func moveSelection(direction: Int) {
-        guard !filteredItems.isEmpty else { return }
-        let currentIndex = filteredItems.firstIndex(where: { $0.id == selectedItemId }) ?? -1
+        guard !displayItems.isEmpty else { return }
+        let currentIndex = displayItems.firstIndex(where: { $0.id == selectedItemId }) ?? -1
         var newIndex = currentIndex + direction
         if newIndex < 0 {
             newIndex = 0
-        } else if newIndex >= filteredItems.count {
-            newIndex = filteredItems.count - 1
+        } else if newIndex >= displayItems.count {
+            newIndex = displayItems.count - 1
         }
 
-        if newIndex >= 0 && newIndex < filteredItems.count {
-            withAnimation(.easeInOut(duration: 0.12)) {
-                selectedItemId = filteredItems[newIndex].id
-            }
+        if newIndex >= 0 && newIndex < displayItems.count {
+            selectedItemId = displayItems[newIndex].id
         }
     }
 

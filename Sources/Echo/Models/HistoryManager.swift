@@ -96,12 +96,13 @@ class HistoryManager: ObservableObject {
             items.remove(at: index)
 
             let newItem = ClipboardItem(
-                id: existing.id,  // Reuse ID? Or new ID? Let's use new ID to reflect fresh copy but keep pin state
+                id: existing.id,
                 textContent: text,
                 imagePath: nil,
                 type: .text,
                 dateCreated: Date(),
                 isPinned: existing.isPinned,
+                pinnedDate: existing.pinnedDate,
                 applicationName: appName,
                 bundleIdentifier: bundleIdentifier
             )
@@ -136,6 +137,7 @@ class HistoryManager: ObservableObject {
     func togglePin(for id: UUID) {
         if let index = items.firstIndex(where: { $0.id == id }) {
             items[index].isPinned.toggle()
+            items[index].pinnedDate = items[index].isPinned ? Date() : nil
             saveHistory()
         }
     }

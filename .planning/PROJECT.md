@@ -28,13 +28,13 @@ Instant, frictionless access to clipboard history — press the hotkey, find wha
 
 ### Active
 
-- [ ] Fix scroll performance lag when navigating items quickly (stutter + input delay)
-- [ ] Pinned items go to end of pinned group (not top)
+- [x] Fix scroll performance lag when navigating items quickly (stutter + input delay)
+- [x] Pinned items go to end of pinned group (not top)
 - [ ] Full link preview cards for copied URLs (title, description, thumbnail)
 - [ ] Right detail panel color slightly lighter than left panel (visual separation)
 - [ ] Gray selection highlight instead of blue (match dark theme)
 - [ ] Show source app icon in list rows and detail panel (fallback to default icon)
-- [ ] Search matches against full clipboard content, not just title/preview
+- [x] Search matches against full clipboard content, not just title/preview
 
 ### Out of Scope
 
